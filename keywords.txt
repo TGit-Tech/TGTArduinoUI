@@ -1,0 +1,43 @@
+TGTWidgets Arduino IDE keywords
+
+Classes
+
+UIWidget KEYWORD1 WFLabel KEYWORD1 WChLabel KEYWORD1 WCharVal KEYWORD1
+WNumVal KEYWORD1 WEnumVal KEYWORD1 UIScreen KEYWORD1
+
+UIWidget methods
+
+Value KEYWORD2 chValue KEYWORD2 AddEnum KEYWORD2 Selected KEYWORD2
+Display KEYWORD2 WidgetNavigate KEYWORD2
+
+WFLabel methods
+
+WChLabel methods
+
+WCharVal methods
+
+WNumVal methods
+
+WEnumVal methods
+
+UIScreen methods
+
+gotValue KEYWORD2 SelectedWHandleUID KEYWORD2 DisplayScreen KEYWORD2
+OnScreenNavigate KEYWORD2 NewWFLabel KEYWORD2 NewWChLabel KEYWORD2
+NewWNumVal KEYWORD2 NewWCharVal KEYWORD2 NewWEnumVal KEYWORD2
+
+Public data members
+
+SelectNum KEYWORD2 WHandleUID KEYWORD2 NScrIdx KEYWORD2 SetValueWH
+KEYWORD2 SetValue KEYWORD2 chSetValue KEYWORD2 Vmin KEYWORD2 Vmax
+KEYWORD2
+
+Data type and configuration constants
+
+VDTBYTE LITERAL1 VDTUINT LITERAL1 VDTSINT LITERAL1 MAXWIDGETSPERSCR
+LITERAL1 MAXWIDGETENUMS LITERAL1 TFT_ROWS LITERAL1 TFT_ROW_Y LITERAL1
+TFT_COL_X LITERAL1 CHARSPERROW LITERAL1
+
+Helper arrays
+
+MultiplierDEC LITERAL1 MultiplierHEX LITERAL1
