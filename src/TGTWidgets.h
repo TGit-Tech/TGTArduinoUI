@@ -256,22 +256,9 @@ public:
   WEnumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable = false, uint16_t _WHandleUID = WHNONE)
   : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID) {}
 
-  void Display() override {
-    GFX->setCursor(PosX, PosY);
-    if (bSelected) {GFX->setTextColor(UI_SELCHAR_COLOR);} else {GFX->setTextColor(UI_STDCHAR_COLOR);}
-    bool bfound = false;
-    for(int i=0;i<EnumIdx;i++) {                   // Print Enum
-      if(EnumVal[i]==iEVal) {
-        bfound = true;
-        if (EnumLbls[i]!=nullptr) { GFX->print(EnumLbls[i]); }
-        else { GFX->print("nullptr");}
-        break;
-      }
-    }
-    if(!bfound) { GFX->print("noenum"); }
-  } //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
   bool AddEnum(int _iVal, const __FlashStringHelper* _Label ) override {
-    if(EnumIdx>=MAXWIDGETENUMS) { return false; }
+    if(EnumIdx>=MAXWIDGETENUMS) { return false; } // Array Guard
     if(_Label==nullptr) return false;
     byte Len = strlen_P((PGM_P)_Label);
     if(Len > MaxChars) MaxChars = Len;
@@ -279,22 +266,68 @@ public:
     EnumLbls[EnumIdx] = _Label;
     EnumIdx++;
     return true;
-  } //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  }
   int Value() override { return iEVal; }
   bool Value(int _Value) override { 
     iEVal = _Value;
     GFX->setCursor(PosX, PosY);
-    //GFX->fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
-    GFX->fillRect(PosX, PosY-FONT_Y, (MaxChars*FONT_X), FONT_Y, UI_FILLSCR_COLOR);
     Display();
     return true; 
-  } //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  }
+  //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''  
+  void Display() override {
+    GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*MaxChars, FONT_Y-2, (EditMode) ? ST77XX_YELLOW : UI_FILLSCR_COLOR);
+    GFX->setCursor(PosX, PosY);
+
+    if(EditMode) { GFX->setTextColor(ST77XX_BLACK); }
+    else if(bSelected) { GFX->setTextColor(UI_SELCHAR_COLOR); }
+    else { GFX->setTextColor(UI_STDCHAR_COLOR); }
+
+    bEValFound = false;
+    for(int i=0;i<EnumIdx;i++) {                   // Print Enum
+      if(EnumVal[i]==iEVal) {
+        bEValFound = true;
+        if (EnumLbls[i]!=nullptr) { GFX->print(EnumLbls[i]); }
+        else { GFX->print("nullptr");}
+        break;
+      }
+    }
+    if(!bEValFound) { GFX->print("noenum"); }
+  }
+  //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
+  uint8_t WidgetNavigate(uint8_t _Button) override {
+    if(_Button==NAVKEYSET) {
+      DBUIINFO(("WEnumVal::NAVKEYSET"))
+      if(bSelected && Settable && EnumIdx>0) {  // This Toggles Edit Mode
+        if(!EditMode) { EditMode = true; Display(); return NAVKEYNONE; }
+        EditMode = false; Display(); return NAVSTAGEVAL;
+      }
+    }
+    if(EditMode) {
+      if(_Button==NAVKEYUP) { 
+        if(!bEValFound) {iEVal=EnumVal[EnumIdx-1]; }
+        else if(EditPos>0) {EditPos--; iEVal = EnumVal[EditPos]; }
+        else { EditPos=EnumIdx-1; iEVal = EnumVal[EditPos]; }
+        Display();
+      }
+      if(_Button==NAVKEYDOWN) {
+        if(!bEValFound) {iEVal=EnumVal[0]; }
+        else if(EditPos+1<EnumIdx) {EditPos++; iEVal=EnumVal[EditPos]; }
+        else { EditPos=0; iEVal=EnumVal[EditPos]; }
+        Display();
+      } 
+      return NAVKEYNONE;
+    }
+    return _Button;
+  } 
+
 private:
   const __FlashStringHelper* EnumLbls[MAXWIDGETENUMS];
   int EnumVal[MAXWIDGETENUMS];
   byte EnumIdx = 0;
   int iEVal = 0;
   byte MaxChars = 0;
+  bool bEValFound = false;
 };
 //-----------------------------------------------------------------------------------------------------------------------------------------
 class TGTScreen {
