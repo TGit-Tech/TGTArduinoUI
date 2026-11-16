@@ -8,40 +8,11 @@
 #define FONT_Y      16          // Chosen Font yAdvance per line
 #define TFT_VAL_X   100
 
-
-// UI Navigation Screens & Navigation Commands
-// Nav Screens Dynamic
-#define NODEIDXMASK 0x00FF
-#define NSTHISNODE  0x0000
-#define NSNODEMAX   0x09FF   // Sub-Screen 9 of NodeIdx 255(FF).
-
 // Nav Screens Identity
-#define NSNONE        0xFFFF
-#define NSNODE       0x0A01
-#define NSSETUP      0x0A03
-#define NSEDITNODE   0x0A04
-#define NSSYSTEM     0x0A05
+#define NSNONE        0xFFFF    // Reserved. Used in UIBase.h
 
 // Multi-Use Widget Handles
-#define WHNONE          0xFFFF
-#define WHTITLE         0x0A00
-#define WHTITLENN       0x0A01    // Screen Title Node Name
-
-// Node Edit Widget Handles
-#define WHNODENAME      0x0A02
-#define WHSECNET        0x0A03
-#define WHRADIOID       0x0A04
-#define WHNETID         0x0A05
-#define WHRFADDR        0x0A06
-
-// Setup Screen Widget Handles
-#define WHADDRNODE    0x0A07
-#define WHDELRNODE    0x0A08
-#define WHEDITNODE    0x0A09
-#define WHADDDEV      0x0A0A
-#define WHDELDEV      0x0A0B
-#define WHEDITDEV     0x0A0C
-#define WHSYSTEM      0x0A0D
+#define WHNONE          0xFFFF  // Reserved. Used in UIBase.h
 
 // Color Scheme
 #define UI_FILLSCR_COLOR        ST77XX_BLACK
@@ -87,9 +58,6 @@
 * @{
 *********************************************************************************/
 // 0x[E]-NAV Event
-#define NAVSTAGEVAL   0xEF
-#define NAVSETVAL     0xEE
-#define NAVDISPLAY    0xED
-#define NAVGETVALS    0xEC
-#define NAVGETSETVAL  0xEB
+#define NAVSTAGEVAL   0xEF  // Reserved. Used in UIBase.h
+#define NAVSETVAL     0xEE  // Reserved. Used in UIBase.h
 ///@}
