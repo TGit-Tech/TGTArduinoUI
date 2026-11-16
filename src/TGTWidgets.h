@@ -339,6 +339,12 @@ public:
     uint16_t SetValueWH = WHNONE;
     int SetValue = 0;
     char* chSetValue = nullptr;
+    
+    void ClearScreen() {
+      pGFX->fillScreen(UI_FILLSCR_COLOR);
+      pGFX->drawFastHLine(0, FONT_Y+2, TFT_WIDTH, UI_STDLINE_COLOR);
+      ScreenCleared = true;
+    }
     uint16_t SelectedWHandleUID() { 
       if(pSelected!=nullptr) return pSelected->WHandleUID; return WHNONE; 
     }
@@ -359,18 +365,6 @@ public:
       for (int i=0; i<WIdx; i++) {
         if(Widget[i]->WHandleUID==_WHandleUID) { Widget[i]->chValue(_Value); return true; }
       } return false;      
-    }
-    //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''
-    void DisplayScreen() {
-      if (DisplayedOnce) return; DisplayedOnce = true;
-      bool OnceSelected = false;
-      pGFX->fillScreen(UI_FILLSCR_COLOR);
-      pGFX->drawFastHLine(0, FONT_Y+2, TFT_WIDTH, UI_STDLINE_COLOR);
-      for (int i=0; i<WIdx; i++) {
-        if(Widget[i] == nullptr) continue;
-        if(!OnceSelected && Widget[i]->SelectNum != 0) { pSelected = Widget[i]; pSelected->Selected(true); OnceSelected = true; }
-        Widget[i]->Display();
-      }
     }
     //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
     uint8_t OnScreenNavigate(uint8_t _Button) {
@@ -414,46 +408,56 @@ public:
                     const __FlashStringHelper* _Label,
                     uint16_t _WHandleUID = WHNONE) {
 
+      if(!ScreenCleared) ClearScreen();
       if(WIdx>=MAXWIDGETSPERSCR) return false;
       Widget[WIdx] = new WFLabel(_SelectNum,pGFX,_PosX,_PosY,_Label,_WHandleUID);
+      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
       if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      WIdx++; return true;
+      Widget[WIdx]->Display(); WIdx++; return true;
     }
     bool NewWChLabel(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                      int _charSize, char* _Label, 
                      uint16_t _WHandleUID = WHNONE) {
 
+      if(!ScreenCleared) ClearScreen();
       if(WIdx>=MAXWIDGETSPERSCR) return false;
       Widget[WIdx] = new WChLabel(_SelectNum,pGFX,_PosX,_PosY,_charSize,_Label,_WHandleUID);
+      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
       if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      WIdx++; return true;
+      Widget[WIdx]->Display(); WIdx++; return true;
     }
     bool NewWNumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                     uint8_t _VDataType, uint8_t _VBase = HEX, bool _Settable = false,
                     uint16_t _WHandleUID = WHNONE) {
 
+      if(!ScreenCleared) ClearScreen();
       if(WIdx>=MAXWIDGETSPERSCR) return false;
       Widget[WIdx] = new WNumVal(_SelectNum,pGFX,_PosX,_PosY,_VDataType,_VBase,_Settable,_WHandleUID);
+      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
       if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      WIdx++; return true;
+      Widget[WIdx]->Display(); WIdx++; return true;
     }
     bool NewWCharVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                      int _charSize, bool _Settable = false,
                      uint16_t _WHandleUID = WHNONE) {
 
+      if(!ScreenCleared) ClearScreen();
       if(WIdx>=MAXWIDGETSPERSCR) return false;
       Widget[WIdx] = new WCharVal(_SelectNum, pGFX,_PosX,_PosY,_charSize,_Settable,_WHandleUID);
+      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
       if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      WIdx++; return true;
+      Widget[WIdx]->Display(); WIdx++; return true;
     }    
     bool NewWEnumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                      bool _Settable = false, 
                      uint16_t _WHandleUID = WHNONE) {
 
+      if(!ScreenCleared) ClearScreen();
       if(WIdx>=MAXWIDGETSPERSCR) return false;
       Widget[WIdx] = new WEnumVal(_SelectNum,pGFX,_PosX,_PosY,_Settable,_WHandleUID);
+      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
       if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      WIdx++; return true;
+      Widget[WIdx]->Display(); WIdx++; return true;
     }
     bool AddEnum(uint16_t _WHandleUID, int _iVal, const __FlashStringHelper* _Label) {
       for(byte i = 0; i < WIdx; i++) {
@@ -463,8 +467,8 @@ public:
     }
 protected:
     Adafruit_GFX* pGFX = nullptr;
-    bool DisplayedOnce = false;
     int LastSelectNum = 0;
+    bool ScreenCleared = false;
     TGTWidget* pSelected = nullptr; 
     TGTWidget* Widget[MAXWIDGETSPERSCR] = {nullptr};
     byte WIdx = 0;
