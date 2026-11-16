@@ -9,7 +9,7 @@ Notes about Navigate:
 */
 #pragma once
 
-#include "UIConfig.h"
+#include "TGTWidgetsConfig.h"
 #include <Adafruit_ST7735.h>
 #include <avr/pgmspace.h>
 
@@ -33,11 +33,11 @@ constexpr size_t ArraySize(T (&)[N]) { return N; }
 static const uint16_t MultiplierDEC[] = {1, 10, 100, 1000};
 static const uint16_t MultiplierHEX[] = {1, 16, 256, 4096};
 //--------------------------------------------------------------------------------------------------------------------------------
-class UIWidget {
+class TGTWidget {
 public:
-  UIWidget(byte _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable, uint16_t _WHandleUID)
+  TGTWidget(byte _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable, uint16_t _WHandleUID)
   : SelectNum(_SelectNum), GFX(_GFX), PosX(_PosX), PosY(_PosY), Settable(_Settable), WHandleUID(_WHandleUID)  {}
-  virtual ~UIWidget() = default;
+  virtual ~TGTWidget() = default;
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
   uint8_t SelectNum;
   uint16_t WHandleUID = 0xFFFF;
@@ -63,27 +63,27 @@ protected:
   bool EditMode = false;
 };
 //--------------------------------------------------------------------------------------------------------------------------------
-class WFLabel : public UIWidget {
+class WFLabel : public TGTWidget {
 public:
   WFLabel(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, const __FlashStringHelper* _Label, uint16_t _WHandleUID = WHNONE )
-  : UIWidget(_SelectNum, _GFX, _PosX, _PosY, false, _WHandleUID), Label(_Label) {  }
+  : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, false, _WHandleUID), Label(_Label) {  }
 
   void Display() override {
     GFX->setCursor(PosX, PosY);
     if (bSelected) {GFX->setTextColor(UI_SELCHAR_COLOR);} else {GFX->setTextColor(UI_STDCHAR_COLOR);}
     if (Label!=nullptr) GFX->print(Label);
   }
-  // No Set Mode so Button just returns from UIWidget
+  // No Set Mode so Button just returns from TGTWidget
 private:
   const __FlashStringHelper* Label;
 
 };
 //--------------------------------------------------------------------------------------------------------------------------------
-class WChLabel : public UIWidget {
+class WChLabel : public TGTWidget {
 public:
   WChLabel(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY,
            int _charSize, const char* _Label, uint16_t _WHandleUID = WHNONE)
-  : UIWidget(_SelectNum, _GFX, _PosX, _PosY, false, _WHandleUID), charSize(_charSize) 
+  : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, false, _WHandleUID), charSize(_charSize) 
   {
     Label = new char[charSize + 1];
     if(Label != nullptr && _Label != nullptr) { strncpy(Label, _Label, charSize); Label[charSize] = '\0'; }
@@ -96,16 +96,16 @@ public:
     else { GFX->setTextColor(UI_STDCHAR_COLOR); }
     if(Label != nullptr) GFX->print(Label);
   }
-  // No Set Mode so Button just returns from UIWidget
+  // No Set Mode so Button just returns from TGTWidget
 private:
   char* Label = nullptr;
   int charSize;
 };
 //--------------------------------------------------------------------------------------------------------------------------------
-class WCharVal : public UIWidget {
+class WCharVal : public TGTWidget {
   public:
     WCharVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, int _charSize, bool _Settable = false, uint16_t _WHandleUID = WHNONE)
-    : UIWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID), charSize(_charSize) {}
+    : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID), charSize(_charSize) {}
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
   bool chValue(char* _Value) override { Valchar = _Value; Display(); return true; }
   bool chValue(const char* _Value) override { Valchar = _Value; Display(); return true; }
@@ -163,12 +163,12 @@ class WCharVal : public UIWidget {
     int charSize;
 };
 //--------------------------------------------------------------------------------------------------------------------------------
-class WNumVal : public UIWidget {
+class WNumVal : public TGTWidget {
   public:
     uint16_t Vmin =0, Vmax =0;
     WNumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY,
       uint8_t _VDataType, uint8_t _VBase = HEX, bool _Settable = false, uint16_t _WHandleUID = WHNONE)
-      : UIWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID), VDataType(_VDataType), VBase(_VBase)
+      : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID), VDataType(_VDataType), VBase(_VBase)
     {
       if(VDataType==VDTBYTE) { 
         Vmin=0x0000; Vmax=0x00FF; 
@@ -251,10 +251,10 @@ class WNumVal : public UIWidget {
     byte maxDigits = 0;
 };
 //--------------------------------------------------------------------------------------------------------------------------------
-class WEnumVal : public UIWidget {
+class WEnumVal : public TGTWidget {
 public:
   WEnumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable = false, uint16_t _WHandleUID = WHNONE)
-  : UIWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID) {}
+  : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID) {}
 
   void Display() override {
     GFX->setCursor(PosX, PosY);
@@ -297,10 +297,10 @@ private:
   byte MaxChars = 0;
 };
 //-----------------------------------------------------------------------------------------------------------------------------------------
-class UIScreen {
+class TGTScreen {
 public:
-    UIScreen(Adafruit_GFX& _GFX, uint16_t _NScrIdx) : pGFX(&_GFX), NScrIdx(_NScrIdx) {}
-    ~UIScreen() { for (uint8_t i = 0; i < WIdx; i++) { delete Widget[i]; Widget[i] = nullptr; } }
+    TGTScreen(Adafruit_GFX& _GFX, uint16_t _NScrIdx) : pGFX(&_GFX), NScrIdx(_NScrIdx) {}
+    ~TGTScreen() { for (uint8_t i = 0; i < WIdx; i++) { delete Widget[i]; Widget[i] = nullptr; } }
     //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
     uint16_t NScrIdx = NSNONE;
     uint16_t SetValueWH = WHNONE;
@@ -341,12 +341,12 @@ public:
     }
     //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
     uint8_t OnScreenNavigate(uint8_t _Button) {
-      DBUIAENTER((_Button),("UIScreen::Navigate(_Button)\n"))
-      if(pSelected==nullptr) {DBUIERROR(("UIScreen::OnScreenNavigate pSelected==nullptr\n")) return _Button;}
+      DBUIAENTER((_Button),("TGTScreen::Navigate(_Button)\n"))
+      if(pSelected==nullptr) {DBUIERROR(("TGTScreen::OnScreenNavigate pSelected==nullptr\n")) return _Button;}
       uint8_t NavRtn = pSelected->WidgetNavigate(_Button); // Pass Button to Selected Widget
 
       if(NavRtn==NAVKEYUP) {
-        DBUIINFO(("UIScreen::OnScreenNavigate NavRtn==NAVKEYUP Prev Widget\n"))
+        DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVKEYUP Prev Widget\n"))
         for (int s=pSelected->SelectNum - 1; s>0; s--) {
           for (int i=0; i<WIdx; i++) {
             if(Widget[i]->SelectNum==s) {
@@ -357,7 +357,7 @@ public:
         } 
       }
       if(NavRtn==NAVKEYDOWN) {
-        DBUIINFO(("UIScreen::OnScreenNavigate NavRtn==NAVKEYDOWN Next Widget\n"))
+        DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVKEYDOWN Next Widget\n"))
         for (int s=pSelected->SelectNum + 1; s<=LastSelectNum; s++) {
           for (int i=0; i<WIdx; i++) {
             if(Widget[i]->SelectNum==s) {
@@ -368,7 +368,7 @@ public:
         }     
       }
       if(NavRtn==NAVSTAGEVAL) {
-        DBUIINFO(("UIScreen::OnScreenNavigate NavRtn==NAVSTAGEVAL Stage Set Value\n"))
+        DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVSTAGEVAL Stage Set Value\n"))
         SetValueWH = pSelected->WHandleUID;
         SetValue = pSelected->Value();
         chSetValue = pSelected->chValue();
@@ -432,7 +432,7 @@ protected:
     Adafruit_GFX* pGFX = nullptr;
     bool DisplayedOnce = false;
     int LastSelectNum = 0;
-    UIWidget* pSelected = nullptr; 
-    UIWidget* Widget[MAXWIDGETSPERSCR] = {nullptr};
+    TGTWidget* pSelected = nullptr; 
+    TGTWidget* Widget[MAXWIDGETSPERSCR] = {nullptr};
     byte WIdx = 0;
 };
