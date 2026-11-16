@@ -2,10 +2,10 @@ TGTWidgets Arduino IDE keywords
 
 Classes
 
-UIWidget KEYWORD1 WFLabel KEYWORD1 WChLabel KEYWORD1 WCharVal KEYWORD1
+TGTWidget KEYWORD1 WFLabel KEYWORD1 WChLabel KEYWORD1 WCharVal KEYWORD1
 WNumVal KEYWORD1 WEnumVal KEYWORD1 UIScreen KEYWORD1
 
-UIWidget methods
+TGTWidget methods
 
 Value KEYWORD2 chValue KEYWORD2 AddEnum KEYWORD2 Selected KEYWORD2
 Display KEYWORD2 WidgetNavigate KEYWORD2
@@ -20,7 +20,7 @@ WNumVal methods
 
 WEnumVal methods
 
-UIScreen methods
+TGTScreen methods
 
 gotValue KEYWORD2 SelectedWHandleUID KEYWORD2 DisplayScreen KEYWORD2
 OnScreenNavigate KEYWORD2 NewWFLabel KEYWORD2 NewWChLabel KEYWORD2
