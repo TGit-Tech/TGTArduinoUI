@@ -207,7 +207,8 @@ class WNumVal : public TGTWidget {
         GFX->print((int16_t)uiValue, DEC);
       } else {
         if(VDataType==VDTBYTE) {
-          if((uiValue & 0xF0)==0) GFX->print('0');
+          if(VBase==HEX) { if((uiValue & 0xF0)==0) GFX->print('0'); }
+          if(VBase==DEC) { if(uiValue<100) GFX->print('0'); if(uiValue<10) GFX->print('0'); }
         } else {
           if((uiValue & 0xF000)==0) GFX->print('0');
           if((uiValue & 0xFF00)==0) GFX->print('0');
@@ -264,7 +265,7 @@ public:
     if(Len > MaxChars) MaxChars = Len;
     EnumVal[EnumIdx] = _iVal;
     EnumLbls[EnumIdx] = _Label;
-    EnumIdx++;
+    EnumIdx++; Display();
     return true;
   }
   int Value() override { return iEVal; }
@@ -288,11 +289,11 @@ public:
       if(EnumVal[i]==iEVal) {
         bEValFound = true;
         if (EnumLbls[i]!=nullptr) { GFX->print(EnumLbls[i]); }
-        else { GFX->print("nullptr");}
+        else { GFX->print("?P");} // ?P = nullptr
         break;
       }
     }
-    if(!bEValFound) { GFX->print("noenum"); }
+    if(!bEValFound) { GFX->print("?E"); } // ?E = NoEnum
   }
   //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
   uint8_t WidgetNavigate(uint8_t _Button) override {
@@ -326,7 +327,7 @@ private:
   int EnumVal[MAXWIDGETENUMS];
   byte EnumIdx = 0;
   int iEVal = 0;
-  byte MaxChars = 0;
+  byte MaxChars = 2;
   bool bEValFound = false;
 };
 //-----------------------------------------------------------------------------------------------------------------------------------------
