@@ -18,10 +18,18 @@ Notes about Navigate:
 #define TFT_COL_X(col)  (((col) + 0) * FONT_X)
 #define CHARSPERROW     (TFT_WIDTH / FONT_X)
 
-// UINum DataTypes
-#define VDTBYTE       0
-#define VDTUINT       1
-#define VDTSINT       2
+// WNumVal DataTypes
+#define TBYTE     0b00000000  // Byte             0bxxx0 0xxx
+#define TUINT     0b00001000  // Unsigned integer 0bxxx0 1xxx
+#define TSINT     0b00010000  // Signed integer   0bxxx1 0xxx
+#define THEX      0b00100000  // Hexadecimal      0bxx1x xxxx
+#define TDEC      0b00000000  // Decimal          0bxx0x xxxx
+#define TNOSET    0b00000000  // Not settable     0b00xx xxxx
+#define TSET      0b01000000  // Settable         0b01xx xxxx
+#define TSETPD    0b11000000  // Settable, per digit 0b11xx xxxx
+#define TSETMSK   0b11000000  // Bits 7–6
+#define TBASEMSK  0b00100000  // Bit 5
+#define TTYPEMSK  0b00011000  // Bits 4–3
 
 // Master Defines
 #define MAXWIDGETSPERSCR 30
@@ -165,32 +173,42 @@ class WCharVal : public TGTWidget {
 //--------------------------------------------------------------------------------------------------------------------------------
 class WNumVal : public TGTWidget {
   public:
-    uint16_t Vmin =0, Vmax =0;
     WNumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY,
-      uint8_t _VDataType, uint8_t _VBase = HEX, bool _Settable = false, uint16_t _WHandleUID = WHNONE)
-      : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID), VDataType(_VDataType), VBase(_VBase)
+      uint8_t _VDataType, uint16_t _WHandleUID = WHNONE, uint16_t _Vmin=0, uint16_t _Vmax=0xFFFF, 
+      const uint16_t* _Omit = nullptr, uint8_t _OmitSize = 0)
+      : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, ((VDataType&TSETMSK)!=TNOSET), _WHandleUID), 
+        VDataType(_VDataType), Vmin(_Vmin), Vmax(_Vmax), Omit(_Omit), OmitSize(_OmitSize)
     {
-      if(VDataType==VDTBYTE) { 
-        Vmin=0x0000; Vmax=0x00FF; 
-        if(VBase==HEX) maxDigits = 2;
-        if(VBase==DEC) maxDigits = 3;
-      } else if(VDataType==VDTUINT) {
-        Vmin=0x0000; Vmax=0xFFFF;
-        if(VBase==HEX) maxDigits = 4;
-        if(VBase==DEC) maxDigits = 5;
-      } else if(VDataType==VDTSINT) {
-        Vmin=(uint16_t)-32768; Vmax=32767;
-        if(VBase==HEX) maxDigits = 4;
-        if(VBase==DEC) maxDigits = 6;
+      PerDigit = ((VDataType&TSETMSK)==TSETPD);
+      VBase = ((VDataType&TBASEMSK)==THEX) ? HEX : DEC;
+      VDataType = (VDataType&TTYPEMSK);
+    
+      if(VDataType==TBYTE&&Vmax>0xFF) Vmax = 0xFF;
+      if(VBase==HEX) {
+        uint16_t MaxVal = Vmax; maxDigits = 1;
+        while(MaxVal >= 16) { MaxVal /= 16; maxDigits++; }
+      } else {
+        int16_t MinVal = (VDataType==TSINT) ? (int16_t)Vmin : Vmin;
+        uint16_t Largest = (MinVal < 0) ? -MinVal : Vmax;
+        if(Vmax > Largest) Largest = Vmax;
+        maxDigits = (MinVal < 0) ? 1 : 0;
+        do { maxDigits++; Largest /= 10;} 
+        while(Largest);
       }
     }
     //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
     int Value() override { return (int16_t)uiValue; }
     bool Value(int _Value) override {
-      uiValue = (uint16_t)_Value;
-      if(VDataType==VDTBYTE) uiValue &= 0x00FF;
-      Display();
-      return true;
+      bool bReturn = true;
+      if(VDataType == TSINT) {
+        if((int)_Value>(int)Vmax) { bReturn=false; _Value=Vmax; }
+        if((int)_Value<(int)Vmin) { bReturn=false; _Value=Vmin; }
+      } else {
+        if(_Value>Vmax) { bReturn=false; _Value=Vmax; }
+        if(_Value<Vmin) { bReturn=false; _Value=Vmin; }
+      }
+      uiValue = (uint16_t)_Value; Display();
+      return bReturn;
     }
     //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''
     void Display() override {
@@ -203,10 +221,10 @@ class WNumVal : public TGTWidget {
       else if(bSelected) { GFX->setTextColor(UI_SELCHAR_COLOR); }
       else { GFX->setTextColor(UI_STDCHAR_COLOR); }
 
-      if(VDataType==VDTSINT && VBase==DEC) {
+      if(VDataType==TSINT && VBase==DEC) {
         GFX->print((int16_t)uiValue, DEC);
       } else {
-        if(VDataType==VDTBYTE) {
+        if(VDataType==TBYTE) {
           if(VBase==HEX) { if((uiValue & 0xF0)==0) GFX->print('0'); }
           if(VBase==DEC) { if(uiValue<100) GFX->print('0'); if(uiValue<10) GFX->print('0'); }
         } else {
@@ -226,27 +244,46 @@ class WNumVal : public TGTWidget {
         }
       }
       if(EditMode) {
-        if(_Button==NAVKEYLEFT) { if(EditPos<(maxDigits-1)) { EditPos++; Display(); return NAVKEYNONE; } }
-        if(_Button==NAVKEYRIGHT) { if(EditPos>0) { EditPos--; Display(); return NAVKEYNONE; } }
+        if(_Button==NAVKEYLEFT) { 
+          if(PerDigit) return NAVKEYNONE;
+          if(EditPos<(maxDigits-1)) { EditPos++; Display(); return NAVKEYNONE; } 
+        }
+        if(_Button==NAVKEYRIGHT) { 
+          if(PerDigit) return NAVKEYNONE;
+          if(EditPos>0) { EditPos--; Display(); return NAVKEYNONE; } 
+        }
         if(_Button==NAVKEYUP) {
-          uint16_t Step = (VBase==HEX) ? MultiplierHEX[EditPos] : MultiplierDEC[EditPos];
-          if(((uiValue/Step)%VBase)==(VBase-1)) { uiValue -= (uint16_t)((VBase-1)*Step); }
-          else { uiValue += Step; }
-          if(VDataType==VDTBYTE) uiValue &= 0x00FF;
+          if(PerDigit) {
+            uint16_t Step = (VBase==HEX) ? MultiplierHEX[EditPos] : MultiplierDEC[EditPos];
+            if(((uiValue/Step)%VBase)==(VBase-1)) { uiValue -= (uint16_t)((VBase-1)*Step); }
+            else { uiValue += Step; }
+          } else {
+            if(uiValue<Vmax) uiValue++;
+          }
+          if(VDataType == TSINT) {if((int)uiValue>(int)Vmax) uiValue=Vmax; if((int)uiValue<(int)Vmin) uiValue=Vmin;}
+          else {if(uiValue>Vmax) uiValue=Vmax; if(uiValue<Vmin) uiValue=Vmin;}
           Display(); return NAVKEYNONE;
         }
         if(_Button==NAVKEYDOWN) {
-          uint16_t Step = (VBase==HEX) ? MultiplierHEX[EditPos] : MultiplierDEC[EditPos];
-          if(((uiValue/Step)%VBase)==0) { uiValue += (uint16_t)((VBase-1)*Step); }
-          else { uiValue -= Step; }
-          if(VDataType==VDTBYTE) uiValue &= 0x00FF;
+          if(PerDigit) {
+            uint16_t Step = (VBase==HEX) ? MultiplierHEX[EditPos] : MultiplierDEC[EditPos];
+            if(((uiValue/Step)%VBase)==0) { uiValue += (uint16_t)((VBase-1)*Step); }
+            else { uiValue -= Step; }
+          } else {
+            if(uiValue>Vmin) uiValue--;
+          }
+          if(VDataType == TSINT) {if((int)uiValue>(int)Vmax) uiValue=Vmax; if((int)uiValue<(int)Vmin) uiValue=Vmin;}
+          else {if(uiValue>Vmax) uiValue=Vmax; if(uiValue<Vmin) uiValue=Vmin;}
           Display(); return NAVKEYNONE;
         }
       }
       return _Button;
     }
   private:
-    uint16_t uiValue = 0;
+    uint16_t uiValue = 0, Vmin = 0x0000, Vmax = 0xFFFF;
+    const uint16_t* Omit = nullptr;
+    uint8_t OmitSize = 0;
+    bool PerDigit = true;
     byte VBase;
     byte VDataType;
     byte maxDigits = 0;
@@ -426,14 +463,15 @@ public:
       if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
       if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
       Widget[WIdx]->Display(); WIdx++; return true;
-    }
+    } 
     bool NewWNumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
-                    uint8_t _VDataType, uint8_t _VBase = HEX, bool _Settable = false,
-                    uint16_t _WHandleUID = WHNONE) {
+                    uint8_t _VDataType, uint16_t _WHandleUID = WHNONE,
+                    uint16_t _Vmin=0, uint16_t _Vmax=0xFFFF, 
+                    const uint16_t* _Omit = nullptr, uint8_t _OmitSize = 0) {
 
       if(!ScreenCleared) ClearScreen();
       if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WNumVal(_SelectNum,pGFX,_PosX,_PosY,_VDataType,_VBase,_Settable,_WHandleUID);
+      Widget[WIdx] = new WNumVal(_SelectNum,pGFX,_PosX,_PosY,_VDataType,_WHandleUID,_Vmin,_Vmax,_Omit,_OmitSize);
       if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
       if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
       Widget[WIdx]->Display(); WIdx++; return true;
