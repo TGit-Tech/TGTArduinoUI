@@ -58,6 +58,5 @@
 * @{
 *********************************************************************************/
 // 0x[E]-NAV Event
-#define NAVSTAGEVAL   0xEF  // Reserved. Used in UIBase.h
 #define NAVSETVAL     0xEE  // Reserved. Used in UIBase.h
 ///@}

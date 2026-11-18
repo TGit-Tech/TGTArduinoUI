@@ -49,10 +49,11 @@ public:
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
   uint8_t SelectNum;
   uint16_t WHandleUID = 0xFFFF;
-
+  // getters
   virtual int Value() { return 0; }
   virtual bool Value(int _Value) { return false; }
   virtual char* chValue() { return nullptr; }
+  // setters
   virtual bool chValue(char* _Value) { return false; }        // Read/write
   virtual bool chValue(const char* _Value) { return false; } // Read only
   virtual bool AddEnum(int _Value, const __FlashStringHelper* _Label) { return false; }
@@ -136,7 +137,7 @@ class WCharVal : public TGTWidget {
     if(_Button==NAVKEYSET) {
       if(bSelected && Settable) {  // This Toggles Edit Mode
         if(!EditMode) { EditMode = true; Display(); return NAVKEYNONE; }
-        EditMode = false; Display(); return NAVSTAGEVAL;
+        EditMode = false; Display(); return NAVSETVAL;
       }
     }
     if(EditMode) {
@@ -174,10 +175,9 @@ class WCharVal : public TGTWidget {
 class WNumVal : public TGTWidget {
   public:
     WNumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY,
-      uint8_t _VDataType, uint16_t _WHandleUID = WHNONE, uint16_t _Vmin=0, uint16_t _Vmax=0xFFFF, 
-      const uint16_t* _Omit = nullptr, uint8_t _OmitSize = 0)
-      : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, ((VDataType&TSETMSK)!=TNOSET), _WHandleUID), 
-        VDataType(_VDataType), Vmin(_Vmin), Vmax(_Vmax), Omit(_Omit), OmitSize(_OmitSize)
+      uint8_t _VDataType, uint16_t _WHandleUID = WHNONE, uint16_t _Vmin=0, uint16_t _Vmax=0xFFFF)
+      : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, ((_VDataType&TSETMSK)!=TNOSET), _WHandleUID), 
+        VDataType(_VDataType), Vmin(_Vmin), Vmax(_Vmax)
     {
       PerDigit = ((VDataType&TSETMSK)==TSETPD);
       VBase = ((VDataType&TBASEMSK)==THEX) ? HEX : DEC;
@@ -212,26 +212,25 @@ class WNumVal : public TGTWidget {
     }
     //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''
     void Display() override {
-      GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*maxDigits, FONT_Y-2, (EditMode) ? UIKB_NAMEEDIT_BGCOLOR : UI_FILLSCR_COLOR);
       GFX->setCursor(PosX, PosY);
-
-      if(EditMode) {
-        GFX->fillRect(PosX+((maxDigits-1-EditPos)*FONT_X), (PosY-FONT_Y)+4, FONT_X, FONT_Y-2, ST77XX_YELLOW);
-        GFX->setTextColor(ST77XX_BLACK); }
-      else if(bSelected) { GFX->setTextColor(UI_SELCHAR_COLOR); }
-      else { GFX->setTextColor(UI_STDCHAR_COLOR); }
-
-      if(VDataType==TSINT && VBase==DEC) {
-        GFX->print((int16_t)uiValue, DEC);
-      } else {
-        if(VDataType==TBYTE) {
-          if(VBase==HEX) { if((uiValue & 0xF0)==0) GFX->print('0'); }
-          if(VBase==DEC) { if(uiValue<100) GFX->print('0'); if(uiValue<10) GFX->print('0'); }
-        } else {
-          if((uiValue & 0xF000)==0) GFX->print('0');
-          if((uiValue & 0xFF00)==0) GFX->print('0');
-          if((uiValue & 0xFFF0)==0) GFX->print('0');
-        }
+      // Background
+      if(PerDigit&&EditMode)  GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*maxDigits, FONT_Y-2, UIKB_NAMEEDIT_BGCOLOR);
+      else if(EditMode)       GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*maxDigits, FONT_Y-2, ST77XX_YELLOW);
+      else                    GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*maxDigits, FONT_Y-2, UI_FILLSCR_COLOR);
+      // Text
+      if(PerDigit&&EditMode) {
+        GFX->fillRect(PosX+((maxDigits-1-EditPos)*FONT_X), (PosY-FONT_Y)+4, FONT_X, FONT_Y-2, ST77XX_YELLOW); // Per-Digit
+                                     GFX->setTextColor(ST77XX_BLACK); }
+      else if(EditMode&&bSelected)  {GFX->setTextColor(ST77XX_BLACK); }
+      else if(bSelected)            {GFX->setTextColor(UI_SELCHAR_COLOR);}
+      else                          {GFX->setTextColor(UI_STDCHAR_COLOR);}
+      // Print
+      if(VDataType==TSINT && VBase==DEC) { GFX->print((int16_t)uiValue, DEC);}
+      else {
+        uint16_t TmpValue = uiValue;
+        byte Digits = 1;
+        while((TmpValue /= VBase) > 0) Digits++;
+        while(Digits++ < maxDigits) GFX->print('0');
         GFX->print(uiValue, VBase);
       }
     }
@@ -240,16 +239,16 @@ class WNumVal : public TGTWidget {
       if(_Button==NAVKEYSET) {
         if(bSelected && Settable) {  // This Toggles Edit Mode
           if(!EditMode) { EditMode = true; Display(); return NAVKEYNONE; }
-          EditMode = false; Display(); return NAVSTAGEVAL;
+          EditMode = false; Display(); return NAVSETVAL;
         }
       }
       if(EditMode) {
         if(_Button==NAVKEYLEFT) { 
-          if(PerDigit) return NAVKEYNONE;
+          if(!PerDigit) return NAVKEYNONE;
           if(EditPos<(maxDigits-1)) { EditPos++; Display(); return NAVKEYNONE; } 
         }
         if(_Button==NAVKEYRIGHT) { 
-          if(PerDigit) return NAVKEYNONE;
+          if(!PerDigit) return NAVKEYNONE;
           if(EditPos>0) { EditPos--; Display(); return NAVKEYNONE; } 
         }
         if(_Button==NAVKEYUP) {
@@ -280,12 +279,10 @@ class WNumVal : public TGTWidget {
       return _Button;
     }
   private:
+    byte VDataType;
     uint16_t uiValue = 0, Vmin = 0x0000, Vmax = 0xFFFF;
-    const uint16_t* Omit = nullptr;
-    uint8_t OmitSize = 0;
     bool PerDigit = true;
     byte VBase;
-    byte VDataType;
     byte maxDigits = 0;
 };
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -338,7 +335,7 @@ public:
       DBUIINFO(("WEnumVal::NAVKEYSET"))
       if(bSelected && Settable && EnumIdx>0) {  // This Toggles Edit Mode
         if(!EditMode) { EditMode = true; Display(); return NAVKEYNONE; }
-        EditMode = false; Display(); return NAVSTAGEVAL;
+        EditMode = false; Display(); return NAVSETVAL;
       }
     }
     if(EditMode) {
@@ -374,9 +371,6 @@ public:
     ~TGTScreen() { for (uint8_t i = 0; i < WIdx; i++) { delete Widget[i]; Widget[i] = nullptr; } }
     //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
     uint16_t NScrIdx = NSNONE;
-    uint16_t SetValueWH = WHNONE;
-    int SetValue = 0;
-    char* chSetValue = nullptr;
     
     void ClearScreen() {
       pGFX->fillScreen(UI_FILLSCR_COLOR);
@@ -385,6 +379,14 @@ public:
     }
     uint16_t SelectedWHandleUID() { 
       if(pSelected!=nullptr) return pSelected->WHandleUID; return WHNONE; 
+    }
+    char* SelectedWchValue() {
+      if(pSelected==nullptr) return nullptr;
+      return pSelected->chValue();
+    }
+    uint16_t SelectedWValue() {
+      if(pSelected==nullptr) return WHNONE;
+      return pSelected->Value();
     }
     bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, int _Value) {
       if (_NScrIdx!=NScrIdx) return false;
@@ -432,13 +434,6 @@ public:
           }
         }     
       }
-      if(NavRtn==NAVSTAGEVAL) {
-        DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVSTAGEVAL Stage Set Value\n"))
-        SetValueWH = pSelected->WHandleUID;
-        SetValue = pSelected->Value();
-        chSetValue = pSelected->chValue();
-        return NAVSETVAL;
-      }
       return NavRtn;
     }
     //'''''''''''''''''''''''''''''''''( Add Widgets )''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -471,7 +466,7 @@ public:
 
       if(!ScreenCleared) ClearScreen();
       if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WNumVal(_SelectNum,pGFX,_PosX,_PosY,_VDataType,_WHandleUID,_Vmin,_Vmax,_Omit,_OmitSize);
+      Widget[WIdx] = new WNumVal(_SelectNum,pGFX,_PosX,_PosY,_VDataType,_WHandleUID,_Vmin,_Vmax);
       if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
       if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
       Widget[WIdx]->Display(); WIdx++; return true;
