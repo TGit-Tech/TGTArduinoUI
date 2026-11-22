@@ -116,8 +116,8 @@ class WCharVal : public TGTWidget {
     WCharVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, int _charSize, bool _Settable = false, uint16_t _WHandleUID = WHNONE)
     : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID), charSize(_charSize) {}
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
-  bool chValue(char* _Value) override { Valchar = _Value; Display(); return true; }
-  bool chValue(const char* _Value) override { Valchar = _Value; Display(); return true; }
+  bool chValue(char* _Value) override { if(EditMode) return false; Valchar = _Value; Display(); return true; }
+  bool chValue(const char* _Value) override { if(EditMode) return false; Valchar = _Value; Display(); return true; }
   char* chValue() override { return Valchar; }
   //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''
   void Display() override {
@@ -199,6 +199,8 @@ class WNumVal : public TGTWidget {
     //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
     int Value() override { return (int16_t)uiValue; }
     bool Value(int _Value) override {
+      if(EditMode) return false;
+      if(_Value==uiValue) return true;
       bool bReturn = true;
       if(VDataType == TSINT) {
         if((int)_Value>(int)Vmax) { bReturn=false; _Value=Vmax; }
@@ -304,6 +306,8 @@ public:
   }
   int Value() override { return iEVal; }
   bool Value(int _Value) override { 
+    if(EditMode) return false;
+    if(_Value==iEVal) return true;
     iEVal = _Value;
     GFX->setCursor(PosX, PosY);
     Display();
