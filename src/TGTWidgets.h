@@ -56,14 +56,14 @@ Notes about Navigate:
 * @{
 *********************************************************************************/
 // 0x[F]-Key Presses
-#define NAVKEYNONE        0xFF
-#define NAVKEYRIGHT       0xFE
-#define NAVKEYLEFT        0xFD
-#define NAVKEYUP          0xFC
-#define NAVKEYDOWN        0xFB
-#define NAVKEYSET         0xFA
-#define NAVKEYGET        0xF9
-#define KEYPRESSMIN       0xF0
+constexpr uint8_t NAVKEYNONE        =0xB0  //B for Button
+constexpr uint8_t NAVKEYRIGHT       =0xB1
+constexpr uint8_t NAVKEYLEFT        =0xB2
+constexpr uint8_t NAVKEYUP          =0xB3
+constexpr uint8_t NAVKEYDOWN        =0xB4
+constexpr uint8_t NAVKEYSET         =0xB5
+constexpr uint8_t NAVKEYGET         =0xB6
+constexpr uint8_t KEYPRESSMIN       =0xB7
 ///@}
 /******************************************************************************//**
 * @defgroup NAV Navigate() Event Constants
@@ -221,6 +221,7 @@ TGTScreen(Adafruit_GFX& _GFX, uint16_t _NScrIdx);
     uint16_t NScrIdx = NSNONE;
     
 void ClearScreen();
+virtual void DisplayScreen() { } // Screen Specific
 uint16_t SelectedWHandleUID();
 char* SelectedWchValue();
 uint16_t SelectedWValue();
@@ -228,6 +229,7 @@ bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, int _Value);
 bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, char* _Value);
 bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, const char* _Value);
     //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
+virtual uint8_t Navigate(uint8_t _Button) { return _Button; } // Screen Specific
 uint8_t OnScreenNavigate(uint8_t _Button);
     //'''''''''''''''''''''''''''''''''( Add Widgets )''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 bool NewWFLabel(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
