@@ -10,6 +10,7 @@ Notes about Navigate:
 #pragma once
 
 #include <Adafruit_ST7735.h>
+#include <TGT6KeypadDefs.h>
 
 // TGTWidgets configuration (formerly TGTWidgetsConfig.h)
 // 1.8in ST7735S TFT is 128x160
@@ -51,20 +52,6 @@ Notes about Navigate:
  #define ST77XX_ORANGE 0xFC00
 */
 
-/******************************************************************************//**
-* @defgroup NAVKEY Navigate() Keypad Constants
-* @{
-*********************************************************************************/
-// 0x[F]-Key Presses
-constexpr uint8_t NAVKEYNONE        =0xB0  //B for Button
-constexpr uint8_t NAVKEYRIGHT       =0xB1
-constexpr uint8_t NAVKEYLEFT        =0xB2
-constexpr uint8_t NAVKEYUP          =0xB3
-constexpr uint8_t NAVKEYDOWN        =0xB4
-constexpr uint8_t NAVKEYSET         =0xB5
-constexpr uint8_t NAVKEYGET         =0xB6
-constexpr uint8_t KEYPRESSMIN       =0xB7
-///@}
 /******************************************************************************//**
 * @defgroup NAV Navigate() Event Constants
 * @{
