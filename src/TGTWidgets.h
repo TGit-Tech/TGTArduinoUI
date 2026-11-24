@@ -9,8 +9,69 @@ Notes about Navigate:
 */
 #pragma once
 
-#include "TGTWidgetsConfig.h"
 #include <Adafruit_ST7735.h>
+
+// TGTWidgets configuration (formerly TGTWidgetsConfig.h)
+// 1.8in ST7735S TFT is 128x160
+#define TFT_WIDTH   128
+#define TFT_HEIGHT  160
+
+#define FONT_X      8           // Chosen Font xAdvance per character
+#define FONT_Y      16          // Chosen Font yAdvance per line
+#define TFT_VAL_X   100
+
+// Nav Screens Identity
+#define NSNONE        0xFFFF    // Reserved. Used in UIBase.h
+
+// Multi-Use Widget Handles
+#define WHNONE          0xFFFF  // Reserved. Used in UIBase.h
+
+// Color Scheme
+#define UI_FILLSCR_COLOR        ST77XX_BLACK
+#define UI_SELCHAR_COLOR        ST77XX_BLUE
+#define UI_STDCHAR_COLOR        ST77XX_WHITE
+#define UI_STDLINE_COLOR        0x03E0
+
+#define UIKB_NAMEEDIT_BGCOLOR   0x8410
+#define UIKB_SELNAMECHAR_COLOR  0x001F
+#define UIKB_STDNAMECHAR_COLOR  ST77XX_WHITE
+#define UIKB_SELCHAR_COLOR      ST77XX_BLUE
+#define UIKB_STDCHAR_COLOR      ST77XX_WHITE
+#define GFXYELLOW 0xFFDE
+ /*
+ // Some ready-made 16-bit ('565') color settings:
+ #define ST77XX_BLACK 0x0000
+ #define ST77XX_WHITE 0xFFFF
+ #define ST77XX_RED 0xF800
+ #define ST77XX_GREEN 0x07E0
+ #define ST77XX_BLUE 0x001F
+ #define ST77XX_CYAN 0x07FF
+ #define ST77XX_MAGENTA 0xF81F
+ #define ST77XX_YELLOW 0xFFE0
+ #define ST77XX_ORANGE 0xFC00
+*/
+
+/******************************************************************************//**
+* @defgroup NAVKEY Navigate() Keypad Constants
+* @{
+*********************************************************************************/
+// 0x[F]-Key Presses
+#define NAVKEYNONE        0xFF
+#define NAVKEYRIGHT       0xFE
+#define NAVKEYLEFT        0xFD
+#define NAVKEYUP          0xFC
+#define NAVKEYDOWN        0xFB
+#define NAVKEYSET         0xFA
+#define NAVKEYGET        0xF9
+#define KEYPRESSMIN       0xF0
+///@}
+/******************************************************************************//**
+* @defgroup NAV Navigate() Event Constants
+* @{
+*********************************************************************************/
+// 0x[E]-NAV Event
+#define NAVSETVAL     0xEE  // Reserved. Used in UIBase.h
+///@}
 #include <avr/pgmspace.h>
 
 #define TFT_ROWS        (TFT_HEIGHT / FONT_Y)
@@ -38,30 +99,29 @@ Notes about Navigate:
 template<typename T, size_t N>
 constexpr size_t ArraySize(T (&)[N]) { return N; }
 
-static const uint16_t MultiplierDEC[] = {1, 10, 100, 1000};
-static const uint16_t MultiplierHEX[] = {1, 16, 256, 4096};
+extern const uint16_t MultiplierDEC[4];
+extern const uint16_t MultiplierHEX[4];
 //--------------------------------------------------------------------------------------------------------------------------------
 class TGTWidget {
 public:
-  TGTWidget(byte _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable, uint16_t _WHandleUID)
-  : SelectNum(_SelectNum), GFX(_GFX), PosX(_PosX), PosY(_PosY), Settable(_Settable), WHandleUID(_WHandleUID)  {}
+TGTWidget(byte _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable, uint16_t _WHandleUID);
   virtual ~TGTWidget() = default;
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
   uint8_t SelectNum;
   uint16_t WHandleUID = 0xFFFF;
   // getters
-  virtual int Value() { return 0; }
-  virtual bool Value(int _Value) { return false; }
-  virtual char* chValue() { return nullptr; }
+virtual int Value();
+virtual bool Value(int _Value);
+virtual char* chValue();
   // setters
-  virtual bool chValue(char* _Value) { return false; }        // Read/write
-  virtual bool chValue(const char* _Value) { return false; } // Read only
-  virtual bool AddEnum(int _Value, const __FlashStringHelper* _Label) { return false; }
-  bool Selected() { return bSelected; }
-  void Selected(bool _Selected) { if (_Selected != bSelected) {bSelected = _Selected;Display();} }
+virtual bool chValue(char* _Value);        // Read/write
+virtual bool chValue(const char* _Value); // Read only
+virtual bool AddEnum(int _Value, const __FlashStringHelper* _Label);
+bool Selected();
+void Selected(bool _Selected);
 
-  virtual void Display() {  }  
-  virtual uint8_t WidgetNavigate(uint8_t _Button) { return _Button; }
+virtual void Display();  
+virtual uint8_t WidgetNavigate(uint8_t _Button);
   
 protected:
   Adafruit_GFX* GFX = nullptr;
@@ -74,14 +134,9 @@ protected:
 //--------------------------------------------------------------------------------------------------------------------------------
 class WFLabel : public TGTWidget {
 public:
-  WFLabel(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, const __FlashStringHelper* _Label, uint16_t _WHandleUID = WHNONE )
-  : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, false, _WHandleUID), Label(_Label) {  }
+WFLabel(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, const __FlashStringHelper* _Label, uint16_t _WHandleUID = WHNONE );
 
-  void Display() override {
-    GFX->setCursor(PosX, PosY);
-    if (bSelected) {GFX->setTextColor(UI_SELCHAR_COLOR);} else {GFX->setTextColor(UI_STDCHAR_COLOR);}
-    if (Label!=nullptr) GFX->print(Label);
-  }
+void Display() override;
   // No Set Mode so Button just returns from TGTWidget
 private:
   const __FlashStringHelper* Label;
@@ -90,21 +145,11 @@ private:
 //--------------------------------------------------------------------------------------------------------------------------------
 class WChLabel : public TGTWidget {
 public:
-  WChLabel(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY,
-           int _charSize, const char* _Label, uint16_t _WHandleUID = WHNONE)
-  : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, false, _WHandleUID), charSize(_charSize) 
-  {
-    Label = new char[charSize + 1];
-    if(Label != nullptr && _Label != nullptr) { strncpy(Label, _Label, charSize); Label[charSize] = '\0'; }
-  }
-  ~WChLabel() override { delete[] Label; }
+WChLabel(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY,
+           int _charSize, const char* _Label, uint16_t _WHandleUID = WHNONE);
+~WChLabel() override;
 
-  void Display() override {
-    GFX->setCursor(PosX, PosY);
-    if(bSelected) { GFX->setTextColor(UI_SELCHAR_COLOR); }
-    else { GFX->setTextColor(UI_STDCHAR_COLOR); }
-    if(Label != nullptr) GFX->print(Label);
-  }
+void Display() override;
   // No Set Mode so Button just returns from TGTWidget
 private:
   char* Label = nullptr;
@@ -113,60 +158,15 @@ private:
 //--------------------------------------------------------------------------------------------------------------------------------
 class WCharVal : public TGTWidget {
   public:
-    WCharVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, int _charSize, bool _Settable = false, uint16_t _WHandleUID = WHNONE)
-    : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID), charSize(_charSize) {}
+WCharVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, int _charSize, bool _Settable = false, uint16_t _WHandleUID = WHNONE);
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
-  bool chValue(char* _Value) override { if(EditMode) return false; Valchar = _Value; Display(); return true; }
-  bool chValue(const char* _Value) override { if(EditMode) return false; Valchar = _Value; Display(); return true; }
-  char* chValue() override { return Valchar; }
+bool chValue(char* _Value) override;
+bool chValue(const char* _Value) override;
+char* chValue() override;
   //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''
-  void Display() override {
-    GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*charSize, FONT_Y-2, (EditMode) ? UIKB_NAMEEDIT_BGCOLOR : UI_FILLSCR_COLOR );
-    GFX->setCursor(PosX, PosY);
-    if(EditMode) {
-      GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*charSize, FONT_Y-2, UIKB_NAMEEDIT_BGCOLOR);
-      GFX->fillRect(PosX+(EditPos*FONT_X),PosY-FONT_Y+4, FONT_X, FONT_Y-2, ST77XX_YELLOW); // Highlight Edit Pos
-      GFX->setTextColor(ST77XX_BLACK);
-    } else if (bSelected) {
-      GFX->setTextColor(UI_SELCHAR_COLOR);
-    } else {GFX->setTextColor(UI_STDCHAR_COLOR);}
-    if (Valchar!=nullptr) {GFX->print(Valchar);} else {GFX->print(F("nullptr"));}
-  }
+void Display() override;
   //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
-  uint8_t WidgetNavigate(uint8_t _Button) override {
-    if(_Button==NAVKEYSET) {
-      if(bSelected && Settable) {  // This Toggles Edit Mode
-        if(!EditMode) { EditMode = true; Display(); return NAVKEYNONE; }
-        EditMode = false; Display(); return NAVSETVAL;
-      }
-    }
-    if(EditMode) {
-      if(Valchar==nullptr) { DBUIERROR(("WCharVal::WidgetNavigate Valchar==nullptr\n")) return NAVKEYNONE; }
-      if(_Button==NAVKEYLEFT) { 
-        if(EditPos>0) { EditPos--; Display(); }
-        return NAVKEYNONE;
-      }
-      if(_Button==NAVKEYRIGHT) {
-        if(EditPos < charSize - 1) { EditPos++; Display(); }
-        return NAVKEYNONE;
-      }
-      if(_Button==NAVKEYUP) { 
-        Valchar[EditPos] = (Valchar[EditPos] & 0xE0) | ((Valchar[EditPos] - 1) & 0x1F);
-        if((Valchar[EditPos] & 0x1F) == 31) { Valchar[EditPos] -= 5; }
-        Display(); return NAVKEYNONE;
-      }
-      if(_Button==NAVKEYDOWN) {
-        Valchar[EditPos] = (Valchar[EditPos] & 0xE0) | ((Valchar[EditPos] + 1) & 0x1F);
-        if((Valchar[EditPos] & 0x1F) == 27) { Valchar[EditPos] -= 27; }
-        Display(); return NAVKEYNONE;
-      }
-      if(_Button==NAVKEYGET) { 
-        Valchar[EditPos] += (Valchar[EditPos] < 96) ? 32 : -64;
-        Display(); return NAVKEYNONE;
-      }
-    }
-    return _Button;
-  }
+uint8_t WidgetNavigate(uint8_t _Button) override;
   protected:
     char* Valchar = nullptr;
     int charSize;
@@ -174,112 +174,15 @@ class WCharVal : public TGTWidget {
 //--------------------------------------------------------------------------------------------------------------------------------
 class WNumVal : public TGTWidget {
   public:
-    WNumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY,
-      uint8_t _VDataType, uint16_t _WHandleUID = WHNONE, uint16_t _Vmin=0, uint16_t _Vmax=0xFFFF)
-      : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, ((_VDataType&TSETMSK)!=TNOSET), _WHandleUID), 
-        VDataType(_VDataType), Vmin(_Vmin), Vmax(_Vmax)
-    {
-      PerDigit = ((VDataType&TSETMSK)==TSETPD);
-      VBase = ((VDataType&TBASEMSK)==THEX) ? HEX : DEC;
-      VDataType = (VDataType&TTYPEMSK);
-    
-      if(VDataType==TBYTE&&Vmax>0xFF) Vmax = 0xFF;
-      if(VBase==HEX) {
-        uint16_t MaxVal = Vmax; maxDigits = 1;
-        while(MaxVal >= 16) { MaxVal /= 16; maxDigits++; }
-      } else {
-        int16_t MinVal = (VDataType==TSINT) ? (int16_t)Vmin : Vmin;
-        uint16_t Largest = (MinVal < 0) ? -MinVal : Vmax;
-        if(Vmax > Largest) Largest = Vmax;
-        maxDigits = (MinVal < 0) ? 1 : 0;
-        do { maxDigits++; Largest /= 10;} 
-        while(Largest);
-      }
-    }
+WNumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY,
+      uint8_t _VDataType, uint16_t _WHandleUID = WHNONE, uint16_t _Vmin=0, uint16_t _Vmax=0xFFFF);
     //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
-    int Value() override { return (int16_t)uiValue; }
-    bool Value(int _Value) override {
-      if(EditMode) return false;
-      if(_Value==uiValue) return true;
-      bool bReturn = true;
-      if(VDataType == TSINT) {
-        if((int)_Value>(int)Vmax) { bReturn=false; _Value=Vmax; }
-        if((int)_Value<(int)Vmin) { bReturn=false; _Value=Vmin; }
-      } else {
-        if(_Value>Vmax) { bReturn=false; _Value=Vmax; }
-        if(_Value<Vmin) { bReturn=false; _Value=Vmin; }
-      }
-      uiValue = (uint16_t)_Value; Display();
-      return bReturn;
-    }
+int Value() override;
+bool Value(int _Value) override;
     //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''
-    void Display() override {
-      GFX->setCursor(PosX, PosY);
-      // Background
-      if(PerDigit&&EditMode)  GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*maxDigits, FONT_Y-2, UIKB_NAMEEDIT_BGCOLOR);
-      else if(EditMode)       GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*maxDigits, FONT_Y-2, ST77XX_YELLOW);
-      else                    GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*maxDigits, FONT_Y-2, UI_FILLSCR_COLOR);
-      // Text
-      if(PerDigit&&EditMode) {
-        GFX->fillRect(PosX+((maxDigits-1-EditPos)*FONT_X), (PosY-FONT_Y)+4, FONT_X, FONT_Y-2, ST77XX_YELLOW); // Per-Digit
-                                     GFX->setTextColor(ST77XX_BLACK); }
-      else if(EditMode&&bSelected)  {GFX->setTextColor(ST77XX_BLACK); }
-      else if(bSelected)            {GFX->setTextColor(UI_SELCHAR_COLOR);}
-      else                          {GFX->setTextColor(UI_STDCHAR_COLOR);}
-      // Print
-      if(VDataType==TSINT && VBase==DEC) { GFX->print((int16_t)uiValue, DEC);}
-      else {
-        uint16_t TmpValue = uiValue;
-        byte Digits = 1;
-        while((TmpValue /= VBase) > 0) Digits++;
-        while(Digits++ < maxDigits) GFX->print('0');
-        GFX->print(uiValue, VBase);
-      }
-    }
+void Display() override;
     //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
-    uint8_t WidgetNavigate(uint8_t _Button) override {
-      if(_Button==NAVKEYSET) {
-        if(bSelected && Settable) {  // This Toggles Edit Mode
-          if(!EditMode) { EditMode = true; Display(); return NAVKEYNONE; }
-          EditMode = false; Display(); return NAVSETVAL;
-        }
-      }
-      if(EditMode) {
-        if(_Button==NAVKEYLEFT) { 
-          if(!PerDigit) return NAVKEYNONE;
-          if(EditPos<(maxDigits-1)) { EditPos++; Display(); return NAVKEYNONE; } 
-        }
-        if(_Button==NAVKEYRIGHT) { 
-          if(!PerDigit) return NAVKEYNONE;
-          if(EditPos>0) { EditPos--; Display(); return NAVKEYNONE; } 
-        }
-        if(_Button==NAVKEYUP) {
-          if(PerDigit) {
-            uint16_t Step = (VBase==HEX) ? MultiplierHEX[EditPos] : MultiplierDEC[EditPos];
-            if(((uiValue/Step)%VBase)==(VBase-1)) { uiValue -= (uint16_t)((VBase-1)*Step); }
-            else { uiValue += Step; }
-          } else {
-            if(uiValue<Vmax) uiValue++;
-          }
-          if(VDataType == TSINT) {if((int)uiValue>(int)Vmax) uiValue=Vmax; if((int)uiValue<(int)Vmin) uiValue=Vmin;}
-          else {if(uiValue>Vmax) uiValue=Vmax; if(uiValue<Vmin) uiValue=Vmin;}
-          Display(); return NAVKEYNONE;
-        }
-        if(_Button==NAVKEYDOWN) {
-          if(PerDigit) {
-            uint16_t Step = (VBase==HEX) ? MultiplierHEX[EditPos] : MultiplierDEC[EditPos];
-            if(((uiValue/Step)%VBase)==0) { uiValue += (uint16_t)((VBase-1)*Step); }
-            else { uiValue -= Step; }
-          } else {
-            if(uiValue>Vmin) uiValue--;
-          }
-          if(VDataType == TSINT) {if((int)uiValue>(int)Vmax) uiValue=Vmax; if((int)uiValue<(int)Vmin) uiValue=Vmin;}
-          else {if(uiValue>Vmax) uiValue=Vmax; if(uiValue<Vmin) uiValue=Vmin;}
-          Display(); return NAVKEYNONE;
-        }
-      }
-      return _Button;
-    }
+uint8_t WidgetNavigate(uint8_t _Button) override;
   private:
     byte VDataType;
     uint16_t uiValue = 0, Vmin = 0x0000, Vmax = 0xFFFF;
@@ -290,75 +193,16 @@ class WNumVal : public TGTWidget {
 //--------------------------------------------------------------------------------------------------------------------------------
 class WEnumVal : public TGTWidget {
 public:
-  WEnumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable = false, uint16_t _WHandleUID = WHNONE)
-  : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID) {}
+WEnumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable = false, uint16_t _WHandleUID = WHNONE);
 
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
-  bool AddEnum(int _iVal, const __FlashStringHelper* _Label ) override {
-    if(EnumIdx>=MAXWIDGETENUMS) { return false; } // Array Guard
-    if(_Label==nullptr) return false;
-    byte Len = strlen_P((PGM_P)_Label);
-    if(Len > MaxChars) MaxChars = Len;
-    EnumVal[EnumIdx] = _iVal;
-    EnumLbls[EnumIdx] = _Label;
-    EnumIdx++; Display();
-    return true;
-  }
-  int Value() override { return iEVal; }
-  bool Value(int _Value) override { 
-    if(EditMode) return false;
-    if(_Value==iEVal) return true;
-    iEVal = _Value;
-    GFX->setCursor(PosX, PosY);
-    Display();
-    return true; 
-  }
+bool AddEnum(int _iVal, const __FlashStringHelper* _Label ) override;
+int Value() override;
+bool Value(int _Value) override;
   //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''  
-  void Display() override {
-    GFX->fillRect(PosX, PosY-FONT_Y+4, FONT_X*MaxChars, FONT_Y-2, (EditMode) ? ST77XX_YELLOW : UI_FILLSCR_COLOR);
-    GFX->setCursor(PosX, PosY);
-
-    if(EditMode) { GFX->setTextColor(ST77XX_BLACK); }
-    else if(bSelected) { GFX->setTextColor(UI_SELCHAR_COLOR); }
-    else { GFX->setTextColor(UI_STDCHAR_COLOR); }
-
-    bEValFound = false;
-    for(int i=0;i<EnumIdx;i++) {                   // Print Enum
-      if(EnumVal[i]==iEVal) {
-        bEValFound = true;
-        if (EnumLbls[i]!=nullptr) { GFX->print(EnumLbls[i]); }
-        else { GFX->print("?P");} // ?P = nullptr
-        break;
-      }
-    }
-    if(!bEValFound) { GFX->print("?E"); } // ?E = NoEnum
-  }
+void Display() override;
   //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
-  uint8_t WidgetNavigate(uint8_t _Button) override {
-    if(_Button==NAVKEYSET) {
-      DBUIINFO(("WEnumVal::NAVKEYSET"))
-      if(bSelected && Settable && EnumIdx>0) {  // This Toggles Edit Mode
-        if(!EditMode) { EditMode = true; Display(); return NAVKEYNONE; }
-        EditMode = false; Display(); return NAVSETVAL;
-      }
-    }
-    if(EditMode) {
-      if(_Button==NAVKEYUP) { 
-        if(!bEValFound) {iEVal=EnumVal[EnumIdx-1]; }
-        else if(EditPos>0) {EditPos--; iEVal = EnumVal[EditPos]; }
-        else { EditPos=EnumIdx-1; iEVal = EnumVal[EditPos]; }
-        Display();
-      }
-      if(_Button==NAVKEYDOWN) {
-        if(!bEValFound) {iEVal=EnumVal[0]; }
-        else if(EditPos+1<EnumIdx) {EditPos++; iEVal=EnumVal[EditPos]; }
-        else { EditPos=0; iEVal=EnumVal[EditPos]; }
-        Display();
-      } 
-      return NAVKEYNONE;
-    }
-    return _Button;
-  } 
+uint8_t WidgetNavigate(uint8_t _Button) override; 
 
 private:
   const __FlashStringHelper* EnumLbls[MAXWIDGETENUMS];
@@ -371,138 +215,38 @@ private:
 //-----------------------------------------------------------------------------------------------------------------------------------------
 class TGTScreen {
 public:
-    TGTScreen(Adafruit_GFX& _GFX, uint16_t _NScrIdx) : pGFX(&_GFX), NScrIdx(_NScrIdx) {}
-    ~TGTScreen() { for (uint8_t i = 0; i < WIdx; i++) { delete Widget[i]; Widget[i] = nullptr; } }
+TGTScreen(Adafruit_GFX& _GFX, uint16_t _NScrIdx);
+~TGTScreen();
     //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
     uint16_t NScrIdx = NSNONE;
     
-    void ClearScreen() {
-      pGFX->fillScreen(UI_FILLSCR_COLOR);
-      pGFX->drawFastHLine(0, FONT_Y+2, TFT_WIDTH, UI_STDLINE_COLOR);
-      ScreenCleared = true;
-    }
-    uint16_t SelectedWHandleUID() { 
-      if(pSelected!=nullptr) return pSelected->WHandleUID; return WHNONE; 
-    }
-    char* SelectedWchValue() {
-      if(pSelected==nullptr) return nullptr;
-      return pSelected->chValue();
-    }
-    uint16_t SelectedWValue() {
-      if(pSelected==nullptr) return WHNONE;
-      return pSelected->Value();
-    }
-    bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, int _Value) {
-      if (_NScrIdx!=NScrIdx) return false;
-      for (int i=0; i<WIdx; i++) {
-        if(Widget[i]->WHandleUID==_WHandleUID) { Widget[i]->Value(_Value); return true; }
-      } return false;
-    }
-    bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, char* _Value) {
-      if (_NScrIdx!=NScrIdx) return false;
-      for (int i=0; i<WIdx; i++) {
-        if(Widget[i]->WHandleUID==_WHandleUID) { Widget[i]->chValue(_Value); return true; }
-      } return false; 
-    }
-    bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, const char* _Value) {
-      if (_NScrIdx!=NScrIdx) return false;
-      for (int i=0; i<WIdx; i++) {
-        if(Widget[i]->WHandleUID==_WHandleUID) { Widget[i]->chValue(_Value); return true; }
-      } return false;      
-    }
+void ClearScreen();
+uint16_t SelectedWHandleUID();
+char* SelectedWchValue();
+uint16_t SelectedWValue();
+bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, int _Value);
+bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, char* _Value);
+bool gotValue(uint16_t _NScrIdx, uint16_t _WHandleUID, const char* _Value);
     //'''''''''''''''''''''''( Navigate )''''''''''''''''''''''''''''''''''''''
-    uint8_t OnScreenNavigate(uint8_t _Button) {
-      DBUIAENTER((_Button),("TGTScreen::Navigate(_Button)\n"))
-      if(pSelected==nullptr) {DBUIERROR(("TGTScreen::OnScreenNavigate pSelected==nullptr\n")) return _Button;}
-      uint8_t NavRtn = pSelected->WidgetNavigate(_Button); // Pass Button to Selected Widget
-
-      if(NavRtn==NAVKEYUP) {
-        DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVKEYUP Prev Widget\n"))
-        for (int s=pSelected->SelectNum - 1; s>0; s--) {
-          for (int i=0; i<WIdx; i++) {
-            if(Widget[i]->SelectNum==s) {
-              pSelected->Selected(false); pSelected = Widget[i]; pSelected->Selected(true);
-              return NAVKEYNONE;
-            }
-          }
-        } 
-      }
-      if(NavRtn==NAVKEYDOWN) {
-        DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVKEYDOWN Next Widget\n"))
-        for (int s=pSelected->SelectNum + 1; s<=LastSelectNum; s++) {
-          for (int i=0; i<WIdx; i++) {
-            if(Widget[i]->SelectNum==s) {
-              pSelected->Selected(false); pSelected = Widget[i]; pSelected->Selected(true);
-              return NAVKEYNONE;
-            }
-          }
-        }     
-      }
-      return NavRtn;
-    }
+uint8_t OnScreenNavigate(uint8_t _Button);
     //'''''''''''''''''''''''''''''''''( Add Widgets )''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    bool NewWFLabel(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
+bool NewWFLabel(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                     const __FlashStringHelper* _Label,
-                    uint16_t _WHandleUID = WHNONE) {
-
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WFLabel(_SelectNum,pGFX,_PosX,_PosY,_Label,_WHandleUID);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }
-    bool NewWChLabel(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
+                    uint16_t _WHandleUID = WHNONE);
+bool NewWChLabel(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                      int _charSize, char* _Label, 
-                     uint16_t _WHandleUID = WHNONE) {
-
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WChLabel(_SelectNum,pGFX,_PosX,_PosY,_charSize,_Label,_WHandleUID);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    } 
-    bool NewWNumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
+                     uint16_t _WHandleUID = WHNONE); 
+bool NewWNumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                     uint8_t _VDataType, uint16_t _WHandleUID = WHNONE,
                     uint16_t _Vmin=0, uint16_t _Vmax=0xFFFF, 
-                    const uint16_t* _Omit = nullptr, uint8_t _OmitSize = 0) {
-
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WNumVal(_SelectNum,pGFX,_PosX,_PosY,_VDataType,_WHandleUID,_Vmin,_Vmax);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }
-    bool NewWCharVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
+                    const uint16_t* _Omit = nullptr, uint8_t _OmitSize = 0);
+bool NewWCharVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                      int _charSize, bool _Settable = false,
-                     uint16_t _WHandleUID = WHNONE) {
-
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WCharVal(_SelectNum, pGFX,_PosX,_PosY,_charSize,_Settable,_WHandleUID);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }    
-    bool NewWEnumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
+                     uint16_t _WHandleUID = WHNONE);    
+bool NewWEnumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                      bool _Settable = false, 
-                     uint16_t _WHandleUID = WHNONE) {
-
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WEnumVal(_SelectNum,pGFX,_PosX,_PosY,_Settable,_WHandleUID);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }
-    bool AddEnum(uint16_t _WHandleUID, int _iVal, const __FlashStringHelper* _Label) {
-      for(byte i = 0; i < WIdx; i++) {
-        if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddEnum(_iVal,_Label); }
-      }
-      return false;
-    }
+                     uint16_t _WHandleUID = WHNONE);
+bool AddEnum(uint16_t _WHandleUID, int _iVal, const __FlashStringHelper* _Label);
 protected:
     Adafruit_GFX* pGFX = nullptr;
     int LastSelectNum = 0;
