@@ -233,7 +233,7 @@ bool WEnumVal::AddEnum(int _iVal,  const __FlashStringHelper* _Label ) {
     EnumIdx++; Display();
     return true;
   }
-bool AddchEnum(int _iVal, const char* _Label ) {
+bool WEnumVal::AddchEnum(int _iVal, const char* _Label ) {
     if(EnumIdx>=MAXWIDGETENUMS) { return false; } // Array Guard
     if(_Label==nullptr) return false;
     byte Len = strlen(_Label);
