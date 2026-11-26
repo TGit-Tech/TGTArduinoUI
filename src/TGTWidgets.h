@@ -182,7 +182,7 @@ uint8_t WidgetNavigate(uint8_t _Button) override;
 class WEnumVal : public TGTWidget {
 public:
 WEnumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable = false, uint16_t _WHandleUID = WHNONE);
-
+WEnumVal::~WEnumVal();
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
 bool AddEnum(int _iVal, const __FlashStringHelper* _Label ) override;
 bool AddchEnum(int _iVal, const char* _Label ) override;

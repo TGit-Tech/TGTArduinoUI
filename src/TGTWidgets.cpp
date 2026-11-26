@@ -223,6 +223,8 @@ uint8_t WNumVal::WidgetNavigate(uint8_t _Button) {
 WEnumVal::WEnumVal(uint8_t _SelectNum,  Adafruit_GFX* _GFX,  uint8_t _PosX,  uint8_t _PosY,  bool _Settable,  uint16_t _WHandleUID)
   : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID) {}
 
+WEnumVal::~WEnumVal() { for(byte i = 0; i < EnumIdx; i++) { delete[] chEnumLbls[i]; chEnumLbls[i] = nullptr; }  }
+
 bool WEnumVal::AddEnum(int _iVal,  const __FlashStringHelper* _Label ) {
     if(EnumIdx>=MAXWIDGETENUMS) { return false; } // Array Guard
     if(_Label==nullptr) return false;
