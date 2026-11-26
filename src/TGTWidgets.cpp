@@ -20,6 +20,8 @@ bool TGTWidget::chValue(const char* _Value) { return false; }
 
 bool TGTWidget::AddEnum(int _Value,  const __FlashStringHelper* _Label) { return false; }
 
+bool TGTWidget::AddchEnum(int _iVal, const char* _Label) { return false; }
+
 bool TGTWidget::Selected() { return bSelected; }
 
 void TGTWidget::Selected(bool _Selected) { if (_Selected != bSelected) {bSelected = _Selected;Display();} }
@@ -441,6 +443,13 @@ bool TGTScreen::NewWEnumVal(uint8_t _SelectNum,  uint8_t _PosX,  uint8_t _PosY,
 bool TGTScreen::AddEnum(uint16_t _WHandleUID,  int _iVal,  const __FlashStringHelper* _Label) {
       for(byte i = 0; i < WIdx; i++) {
         if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddEnum(_iVal,_Label); }
+      }
+      return false;
+    }
+    
+bool TGTScreen::AddchEnum(uint16_t _WHandleUID, int _iVal, const char* _Label) {
+      for(byte i = 0; i < WIdx; i++) {
+        if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddchEnum(_iVal,_Label); }
       }
       return false;
     }

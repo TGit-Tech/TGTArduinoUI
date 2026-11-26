@@ -104,6 +104,7 @@ virtual char* chValue();
 virtual bool chValue(char* _Value);        // Read/write
 virtual bool chValue(const char* _Value); // Read only
 virtual bool AddEnum(int _Value, const __FlashStringHelper* _Label);
+virtual bool AddchEnum(int _iVal, const char* _Label);
 bool Selected();
 void Selected(bool _Selected);
 
@@ -238,6 +239,7 @@ bool NewWEnumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                      bool _Settable = false, 
                      uint16_t _WHandleUID = WHNONE);
 bool AddEnum(uint16_t _WHandleUID, int _iVal, const __FlashStringHelper* _Label);
+bool AddchEnum(uint16_t _WHandleUID, int _iVal, const char* _Label);
 protected:
     Adafruit_GFX* pGFX = nullptr;
     int LastSelectNum = 0;
