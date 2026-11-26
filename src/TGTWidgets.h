@@ -104,7 +104,7 @@ virtual char* chValue();
 virtual bool chValue(char* _Value);        // Read/write
 virtual bool chValue(const char* _Value); // Read only
 virtual bool AddEnum(int _Value, const __FlashStringHelper* _Label);
-virtual bool AddchEnum(int _iVal, const char* _Label);
+virtual bool AddEnum(int _iVal, const char* _Label);
 bool Selected();
 void Selected(bool _Selected);
 
@@ -182,10 +182,10 @@ uint8_t WidgetNavigate(uint8_t _Button) override;
 class WEnumVal : public TGTWidget {
 public:
 WEnumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, bool _Settable = false, uint16_t _WHandleUID = WHNONE);
-WEnumVal::~WEnumVal();
+
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
 bool AddEnum(int _iVal, const __FlashStringHelper* _Label ) override;
-bool AddchEnum(int _iVal, const char* _Label ) override;
+bool AddEnum(int _iVal, const char* _Label ) override;
 int Value() override;
 bool Value(int _Value) override;
   //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''  
@@ -239,7 +239,7 @@ bool NewWEnumVal(uint8_t _SelectNum, uint8_t _PosX, uint8_t _PosY,
                      bool _Settable = false, 
                      uint16_t _WHandleUID = WHNONE);
 bool AddEnum(uint16_t _WHandleUID, int _iVal, const __FlashStringHelper* _Label);
-bool AddchEnum(uint16_t _WHandleUID, int _iVal, const char* _Label);
+bool AddEnum(uint16_t _WHandleUID, int _iVal, const char* _Label);
 protected:
     Adafruit_GFX* pGFX = nullptr;
     int LastSelectNum = 0;

@@ -20,7 +20,7 @@ bool TGTWidget::chValue(const char* _Value) { return false; }
 
 bool TGTWidget::AddEnum(int _Value,  const __FlashStringHelper* _Label) { return false; }
 
-bool TGTWidget::AddchEnum(int _iVal, const char* _Label) { return false; }
+bool TGTWidget::AddEnum(int _iVal, const char* _Label) { return false; }
 
 bool TGTWidget::Selected() { return bSelected; }
 
@@ -223,8 +223,6 @@ uint8_t WNumVal::WidgetNavigate(uint8_t _Button) {
 WEnumVal::WEnumVal(uint8_t _SelectNum,  Adafruit_GFX* _GFX,  uint8_t _PosX,  uint8_t _PosY,  bool _Settable,  uint16_t _WHandleUID)
   : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID) {}
 
-WEnumVal::~WEnumVal() { for(byte i = 0; i < EnumIdx; i++) { delete[] chEnumLbls[i]; chEnumLbls[i] = nullptr; }  }
-
 bool WEnumVal::AddEnum(int _iVal,  const __FlashStringHelper* _Label ) {
     if(EnumIdx>=MAXWIDGETENUMS) { return false; } // Array Guard
     if(_Label==nullptr) return false;
@@ -235,7 +233,7 @@ bool WEnumVal::AddEnum(int _iVal,  const __FlashStringHelper* _Label ) {
     EnumIdx++; Display();
     return true;
   }
-bool WEnumVal::AddchEnum(int _iVal, const char* _Label ) {
+bool WEnumVal::AddEnum(int _iVal, const char* _Label ) {
     if(EnumIdx>=MAXWIDGETENUMS) { return false; } // Array Guard
     if(_Label==nullptr) return false;
     byte Len = strlen(_Label);
@@ -449,9 +447,9 @@ bool TGTScreen::AddEnum(uint16_t _WHandleUID,  int _iVal,  const __FlashStringHe
       return false;
     }
     
-bool TGTScreen::AddchEnum(uint16_t _WHandleUID, int _iVal, const char* _Label) {
+bool TGTScreen::AddEnum(uint16_t _WHandleUID, int _iVal, const char* _Label) {
       for(byte i = 0; i < WIdx; i++) {
-        if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddchEnum(_iVal,_Label); }
+        if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddEnum(_iVal,_Label); }
       }
       return false;
     }
