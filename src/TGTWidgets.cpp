@@ -231,6 +231,18 @@ bool WEnumVal::AddEnum(int _iVal,  const __FlashStringHelper* _Label ) {
     EnumIdx++; Display();
     return true;
   }
+bool AddchEnum(int _iVal, const char* _Label ) {
+    if(EnumIdx>=MAXWIDGETENUMS) { return false; } // Array Guard
+    if(_Label==nullptr) return false;
+    byte Len = strlen(_Label);
+    if(Len > MaxChars) MaxChars = Len;
+    char* p = new char[Len + 1];
+    strcpy(p, _Label);
+    chEnumLbls[EnumIdx] = p;
+    EnumVal[EnumIdx] = _iVal;
+    EnumIdx++; Display();
+    return true;    
+}
 
 int WEnumVal::Value() { return iEVal; }
 
@@ -255,8 +267,9 @@ void WEnumVal::Display() {
     for(int i=0;i<EnumIdx;i++) {                   // Print Enum
       if(EnumVal[i]==iEVal) {
         bEValFound = true;
-        if (EnumLbls[i]!=nullptr) { GFX->print(EnumLbls[i]); }
-        else { GFX->print("?P");} // ?P = nullptr
+        if (EnumLbls[i]!=nullptr)         { GFX->print(EnumLbls[i]); }
+        else if(chEnumLbls[i] != nullptr) { GFX->print(chEnumLbls[i]); }
+        else                              { GFX->print("?P");} // ?P = nullptr
         break;
       }
     }

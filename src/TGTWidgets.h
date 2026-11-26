@@ -184,6 +184,7 @@ WEnumVal(uint8_t _SelectNum, Adafruit_GFX* _GFX, uint8_t _PosX, uint8_t _PosY, b
 
   //'''''''''''''''''''''''( Get/Set )'''''''''''''''''''''''''''''''''''''''
 bool AddEnum(int _iVal, const __FlashStringHelper* _Label ) override;
+bool AddchEnum(int _iVal, const char* _Label ) override;
 int Value() override;
 bool Value(int _Value) override;
   //'''''''''''''''''''''''( Display )'''''''''''''''''''''''''''''''''''''''  
@@ -193,6 +194,7 @@ uint8_t WidgetNavigate(uint8_t _Button) override;
 
 private:
   const __FlashStringHelper* EnumLbls[MAXWIDGETENUMS];
+  const char* chEnumLbls[MAXWIDGETENUMS] = {0};
   int EnumVal[MAXWIDGETENUMS];
   byte EnumIdx = 0;
   int iEVal = 0;
