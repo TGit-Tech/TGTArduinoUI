@@ -22,6 +22,8 @@ bool TGTWidget::AddEnum(int _Value,  const __FlashStringHelper* _Label) { return
 
 bool TGTWidget::AddEnum(int _iVal, const char* _Label) { return false; }
 
+bool TGTWidget::DelEnums() { return false; } 
+
 bool TGTWidget::Selected() { return bSelected; }
 
 void TGTWidget::Selected(bool _Selected) { if (_Selected != bSelected) {bSelected = _Selected;Display();} }
@@ -89,6 +91,7 @@ uint8_t WCharVal::WidgetNavigate(uint8_t _Button) {
       if(Valchar==nullptr) { DBUIERROR(("WCharVal::WidgetNavigate Valchar==nullptr\n")) return NAVKEYNONE; }
       if(_Button==NAVKEYLEFT) { 
         if(EditPos>0) { EditPos--; Display(); }
+        else { EditMode=false; Display(); }
         return NAVKEYNONE;
       }
       if(_Button==NAVKEYRIGHT) {
@@ -184,9 +187,9 @@ uint8_t WNumVal::WidgetNavigate(uint8_t _Button) {
         }
       }
       if(EditMode) {
-        if(_Button==NAVKEYLEFT) { 
-          if(!PerDigit) return NAVKEYNONE;
-          if(EditPos<(maxDigits-1)) { EditPos++; Display(); return NAVKEYNONE; } 
+        if(_Button==NAVKEYLEFT) {
+          if(PerDigit && EditPos<(maxDigits-1)) { EditPos++; Display(); return NAVKEYNONE; }
+          EditMode=false; Display(); return NAVKEYNONE;
         }
         if(_Button==NAVKEYRIGHT) { 
           if(!PerDigit) return NAVKEYNONE;
@@ -222,6 +225,7 @@ uint8_t WNumVal::WidgetNavigate(uint8_t _Button) {
 
 WEnumVal::WEnumVal(uint8_t _SelectNum,  Adafruit_GFX* _GFX,  uint8_t _PosX,  uint8_t _PosY,  bool _Settable,  uint16_t _WHandleUID)
   : TGTWidget(_SelectNum, _GFX, _PosX, _PosY, _Settable, _WHandleUID) {}
+WEnumVal::~WEnumVal() { DelEnums();}
 
 bool WEnumVal::AddEnum(int _iVal,  const __FlashStringHelper* _Label ) {
     if(EnumIdx>=MAXWIDGETENUMS) { return false; } // Array Guard
@@ -244,6 +248,16 @@ bool WEnumVal::AddEnum(int _iVal, const char* _Label ) {
     EnumVal[EnumIdx] = _iVal;
     EnumIdx++; Display();
     return true;    
+}
+bool WEnumVal::DelEnums() {
+  for (byte i = 0; i < EnumIdx; i++) {
+    delete[] chEnumLbls[i];
+    chEnumLbls[i] = nullptr;
+    EnumLbls[i] = nullptr;
+  }
+
+  EnumIdx = 0; iEVal = 0; MaxChars = 2;
+  return true;
 }
 
 int WEnumVal::Value() { return iEVal; }
@@ -287,6 +301,7 @@ uint8_t WEnumVal::WidgetNavigate(uint8_t _Button) {
       }
     }
     if(EditMode) {
+      if(_Button==NAVKEYLEFT) { EditMode=false; Display(); return NAVKEYNONE; }
       if(_Button==NAVKEYUP) { 
         if(!bEValFound) {iEVal=EnumVal[EnumIdx-1]; }
         else if(EditPos>0) {EditPos--; iEVal = EnumVal[EditPos]; }
@@ -350,106 +365,113 @@ bool TGTScreen::gotValue(uint16_t _NScrIdx,  uint16_t _WHandleUID,  const char* 
     }
 
 uint8_t TGTScreen::OnScreenNavigate(uint8_t _Button) {
-      DBUIAENTER((_Button),("TGTScreen::Navigate(_Button)\n"))
-      if(pSelected==nullptr) {DBUIERROR(("TGTScreen::OnScreenNavigate pSelected==nullptr\n")) return _Button;}
-      uint8_t NavRtn = pSelected->WidgetNavigate(_Button); // Pass Button to Selected Widget
+  DBUIAENTER((_Button),("TGTScreen::Navigate(_Button)\n"))
+  if(pSelected==nullptr) {DBUIERROR(("TGTScreen::OnScreenNavigate pSelected==nullptr\n")) return _Button;}
+  uint8_t NavRtn = pSelected->WidgetNavigate(_Button); // Pass Button to Selected Widget
 
-      if(NavRtn==NAVKEYUP) {
-        DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVKEYUP Prev Widget\n"))
-        for (int s=pSelected->SelectNum - 1; s>0; s--) {
-          for (int i=0; i<WIdx; i++) {
-            if(Widget[i]->SelectNum==s) {
-              pSelected->Selected(false); pSelected = Widget[i]; pSelected->Selected(true);
-              return NAVKEYNONE;
-            }
-          }
-        } 
+  if(NavRtn==NAVKEYUP) {
+    DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVKEYUP Prev Widget\n"))
+    for (int s=pSelected->SelectNum - 1; s>0; s--) {
+      for (int i=0; i<WIdx; i++) {
+        if(Widget[i]->SelectNum==s) {
+          pSelected->Selected(false); pSelected = Widget[i]; pSelected->Selected(true);
+          return NAVKEYNONE;
+        }
       }
-      if(NavRtn==NAVKEYDOWN) {
-        DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVKEYDOWN Next Widget\n"))
-        for (int s=pSelected->SelectNum + 1; s<=LastSelectNum; s++) {
-          for (int i=0; i<WIdx; i++) {
-            if(Widget[i]->SelectNum==s) {
-              pSelected->Selected(false); pSelected = Widget[i]; pSelected->Selected(true);
-              return NAVKEYNONE;
-            }
-          }
-        }     
+    } 
+  }
+  if(NavRtn==NAVKEYDOWN) {
+    DBUIINFO(("TGTScreen::OnScreenNavigate NavRtn==NAVKEYDOWN Next Widget\n"))
+    for (int s=pSelected->SelectNum + 1; s<=LastSelectNum; s++) {
+      for (int i=0; i<WIdx; i++) {
+        if(Widget[i]->SelectNum==s) {
+          pSelected->Selected(false); pSelected = Widget[i]; pSelected->Selected(true);
+          return NAVKEYNONE;
+        }
       }
-      return NavRtn;
-    }
+    }     
+  }
+  return NavRtn;
+}
 
 bool TGTScreen::NewWFLabel(uint8_t _SelectNum,  uint8_t _PosX,  uint8_t _PosY, 
-                    const __FlashStringHelper* _Label, 
-                    uint16_t _WHandleUID) {
+                const __FlashStringHelper* _Label, 
+                uint16_t _WHandleUID) {
 
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WFLabel(_SelectNum,pGFX,_PosX,_PosY,_Label,_WHandleUID);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }
+  if(!ScreenCleared) ClearScreen();
+  if(WIdx>=MAXWIDGETSPERSCR) return false;
+  Widget[WIdx] = new WFLabel(_SelectNum,pGFX,_PosX,_PosY,_Label,_WHandleUID);
+  if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
+  if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
+  Widget[WIdx]->Display(); WIdx++; return true;
+}
 
 bool TGTScreen::NewWChLabel(uint8_t _SelectNum,  uint8_t _PosX,  uint8_t _PosY, 
-                     int _charSize,  char* _Label,  
-                     uint16_t _WHandleUID) {
+                 int _charSize,  char* _Label,  
+                 uint16_t _WHandleUID) {
 
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WChLabel(_SelectNum,pGFX,_PosX,_PosY,_charSize,_Label,_WHandleUID);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }
+  if(!ScreenCleared) ClearScreen();
+  if(WIdx>=MAXWIDGETSPERSCR) return false;
+  Widget[WIdx] = new WChLabel(_SelectNum,pGFX,_PosX,_PosY,_charSize,_Label,_WHandleUID);
+  if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
+  if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
+  Widget[WIdx]->Display(); WIdx++; return true;
+}
 
 bool TGTScreen::NewWNumVal(uint8_t _SelectNum,  uint8_t _PosX,  uint8_t _PosY, 
-                    uint8_t _VDataType,  uint16_t _WHandleUID, 
-                    uint16_t _Vmin,  uint16_t _Vmax,  
-                    const uint16_t* _Omit,  uint8_t _OmitSize) {
+                uint8_t _VDataType,  uint16_t _WHandleUID, 
+                uint16_t _Vmin,  uint16_t _Vmax,  
+                const uint16_t* _Omit,  uint8_t _OmitSize) {
 
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WNumVal(_SelectNum,pGFX,_PosX,_PosY,_VDataType,_WHandleUID,_Vmin,_Vmax);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }
+  if(!ScreenCleared) ClearScreen();
+  if(WIdx>=MAXWIDGETSPERSCR) return false;
+  Widget[WIdx] = new WNumVal(_SelectNum,pGFX,_PosX,_PosY,_VDataType,_WHandleUID,_Vmin,_Vmax);
+  if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
+  if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
+  Widget[WIdx]->Display(); WIdx++; return true;
+}
 
 bool TGTScreen::NewWCharVal(uint8_t _SelectNum,  uint8_t _PosX,  uint8_t _PosY, 
-                     int _charSize,  bool _Settable, 
-                     uint16_t _WHandleUID) {
+                 int _charSize,  bool _Settable, 
+                 uint16_t _WHandleUID) {
 
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WCharVal(_SelectNum, pGFX,_PosX,_PosY,_charSize,_Settable,_WHandleUID);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }
+  if(!ScreenCleared) ClearScreen();
+  if(WIdx>=MAXWIDGETSPERSCR) return false;
+  Widget[WIdx] = new WCharVal(_SelectNum, pGFX,_PosX,_PosY,_charSize,_Settable,_WHandleUID);
+  if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
+  if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
+  Widget[WIdx]->Display(); WIdx++; return true;
+}
 
 bool TGTScreen::NewWEnumVal(uint8_t _SelectNum,  uint8_t _PosX,  uint8_t _PosY, 
-                     bool _Settable,  
-                     uint16_t _WHandleUID) {
+                 bool _Settable,  
+                 uint16_t _WHandleUID) {
 
-      if(!ScreenCleared) ClearScreen();
-      if(WIdx>=MAXWIDGETSPERSCR) return false;
-      Widget[WIdx] = new WEnumVal(_SelectNum,pGFX,_PosX,_PosY,_Settable,_WHandleUID);
-      if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
-      if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
-      Widget[WIdx]->Display(); WIdx++; return true;
-    }
+  if(!ScreenCleared) ClearScreen();
+  if(WIdx>=MAXWIDGETSPERSCR) return false;
+  Widget[WIdx] = new WEnumVal(_SelectNum,pGFX,_PosX,_PosY,_Settable,_WHandleUID);
+  if(!pSelected&&_SelectNum) {pSelected = Widget[WIdx]; pSelected->Selected(true);}
+  if(_SelectNum>LastSelectNum) LastSelectNum=_SelectNum;
+  Widget[WIdx]->Display(); WIdx++; return true;
+}
 
 bool TGTScreen::AddEnum(uint16_t _WHandleUID,  int _iVal,  const __FlashStringHelper* _Label) {
-      for(byte i = 0; i < WIdx; i++) {
-        if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddEnum(_iVal,_Label); }
-      }
-      return false;
-    }
+  for(byte i = 0; i < WIdx; i++) {
+    if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddEnum(_iVal,_Label); }
+  }
+  return false;
+}
     
 bool TGTScreen::AddEnum(uint16_t _WHandleUID, int _iVal, const char* _Label) {
-      for(byte i = 0; i < WIdx; i++) {
-        if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddEnum(_iVal,_Label); }
-      }
-      return false;
-    }
+  for(byte i = 0; i < WIdx; i++) {
+    if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->AddEnum(_iVal,_Label); }
+  }
+  return false;
+}
+    
+bool TGTScreen::DelEnums(uint16_t _WHandleUID) {
+  for(byte i = 0; i < WIdx; i++) {
+    if(Widget[i]->WHandleUID == _WHandleUID) { return Widget[i]->DelEnums(); }
+  }
+  return false;
+}
