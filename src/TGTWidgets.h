@@ -250,4 +250,5 @@ protected:
     TGTWidget* pSelected = nullptr; 
     TGTWidget* Widget[MAXWIDGETSPERSCR] = {nullptr};
     byte WIdx = 0;
+    bool ScreenDisplayed = false;   // Courtesy class variable for trapping DisplayScreen() implements.
 };
